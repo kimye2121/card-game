@@ -614,8 +614,12 @@
           if (stored) {
             const parsed = JSON.parse(stored);
             parsed.forEach(c => {
+              c.isCustom = true;
               if (!CARD_POOL.find(p => p.id === c.id)) {
                 CARD_POOL.push(c);
+              } else {
+                const existing = CARD_POOL.find(p => p.id === c.id);
+                existing.isCustom = true;
               }
             });
           }

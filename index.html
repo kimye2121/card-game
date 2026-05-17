@@ -231,13 +231,27 @@
 
       .register-card .action {
         min-height: 40px;
+        padding: 8px 12px;
         border-radius: 10px;
         border: 1px solid rgba(45, 212, 191, 0.35);
         background: linear-gradient(135deg, rgba(20, 184, 166, 0.2), rgba(45, 212, 191, 0.1));
         color: #0f4f49;
         font-weight: 900;
+        font-size: 0.9rem;
+        font-family: inherit;
         cursor: pointer;
         touch-action: manipulation;
+        white-space: nowrap;
+      }
+      .register-card .action.edit-btn {
+        background: linear-gradient(135deg, #14b8a6, #2dd4bf);
+        color: #ffffff;
+        border-color: #14b8a6;
+      }
+      .register-card .action.delete {
+        background: linear-gradient(135deg, rgba(239, 68, 68, 0.18), rgba(239, 68, 68, 0.08));
+        color: #b91c1c;
+        border-color: rgba(239, 68, 68, 0.45);
       }
 
       .probability-row {
@@ -2164,13 +2178,13 @@
           let actionBtnsHtml = "";
           if (poolCard.isCustom) {
             actionBtnsHtml = `
-              <div style="display:flex; gap:4px; margin-top:6px;">
-                <button class="action edit-btn" type="button" data-edit="${poolCard.id}" style="flex:1; border-color:var(--accent); color:var(--accent); background:rgba(45,212,191,0.1);">수정</button>
-                <button class="action delete" type="button" data-delete="${poolCard.id}" style="flex:1; border-color:#ef4444; color:#ef4444; background:rgba(239,68,68,0.1);">삭제</button>
+              <div style="display:flex; gap:6px; margin-top:6px;">
+                <button class="action edit-btn" type="button" data-edit="${poolCard.id}" style="flex:1;">수정</button>
+                <button class="action delete" type="button" data-delete="${poolCard.id}" style="flex:1;">삭제</button>
               </div>
             `;
           } else {
-            actionBtnsHtml = `<button class="action delete" type="button" data-delete="${poolCard.id}" style="border-color:#ef4444; color:#ef4444; background:linear-gradient(135deg, rgba(239,68,68,0.1), rgba(239,68,68,0.05)); margin-top:6px;">삭제</button>`;
+            actionBtnsHtml = `<button class="action delete" type="button" data-delete="${poolCard.id}" style="margin-top:6px;">삭제</button>`;
           }
 
           return `

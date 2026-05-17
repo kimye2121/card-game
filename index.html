@@ -1,0 +1,2356 @@
+﻿<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <meta name="theme-color" content="#f3f8ff" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <title>3D 포켓몬 스타일 카드 팩 개봉</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --bg-main: #f3f8ff;
+        --ink: #162033;
+        --muted: #5d6b80;
+        --panel: rgba(255, 255, 255, 0.82);
+        --line: rgba(22, 32, 51, 0.14);
+        --accent: #2dd4bf;
+        --pink: #ec4899;
+        --gold: #fbbf24;
+        --nav-height: 64px;
+        --safe-bottom: env(safe-area-inset-bottom, 0px);
+      }
+
+      * {
+        box-sizing: border-box;
+        user-select: none;
+        -webkit-user-select: none;
+        -webkit-tap-highlight-color: transparent;
+      }
+
+      html, body {
+        overscroll-behavior: none;
+        -webkit-overflow-scrolling: touch;
+      }
+
+      body {
+        min-width: 320px;
+        min-height: 100vh;
+        margin: 0;
+        overflow: hidden;
+        background: var(--bg-main);
+        color: var(--ink);
+        font-family: Inter, Pretendard, system-ui, sans-serif;
+      }
+
+      .view-panel {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: calc(var(--nav-height) + var(--safe-bottom));
+        overflow: hidden;
+        display: none;
+      }
+
+      .view-panel.active {
+        display: block;
+      }
+
+      #stage {
+        width: 100%;
+        height: 100%;
+        touch-action: none;
+      }
+
+      .hud {
+        position: absolute;
+        top: calc(14px + env(safe-area-inset-top, 0px));
+        right: 14px;
+        left: 14px;
+        z-index: 5;
+        display: flex;
+        align-items: start;
+        justify-content: space-between;
+        gap: 12px;
+        pointer-events: none;
+      }
+
+      .brand,
+      .status {
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: var(--panel);
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+        backdrop-filter: blur(20px);
+      }
+
+      .brand {
+        max-width: min(70vw, 420px);
+        padding: 12px 16px;
+      }
+
+      .brand strong {
+        display: block;
+        font-size: 1rem;
+        color: var(--ink);
+      }
+
+      .brand span,
+      .status span,
+      .hint {
+        color: var(--muted);
+        font-size: 0.8rem;
+        margin-top: 2px;
+        display: block;
+      }
+
+      .status {
+        min-width: 90px;
+        padding: 12px;
+        text-align: right;
+      }
+
+      .status strong {
+        display: block;
+        color: var(--accent);
+        font-size: 0.95rem;
+      }
+
+      .hint {
+        position: absolute;
+        right: 16px;
+        bottom: 76px;
+        left: 16px;
+        z-index: 5;
+        padding: 12px;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: rgba(255, 255, 255, 0.78);
+        text-align: center;
+        backdrop-filter: blur(10px);
+        pointer-events: none;
+      }
+
+      .center-controls {
+        position: absolute;
+        bottom: 14px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 30;
+        pointer-events: auto;
+      }
+
+      #collectionPanel {
+        padding: calc(20px + env(safe-area-inset-top, 0px)) 20px 20px;
+        overflow-y: auto;
+        background: #f3f8ff;
+      }
+
+      #registerPanel {
+        padding: calc(20px + env(safe-area-inset-top, 0px)) 20px 20px;
+        overflow-y: auto;
+        background: #f3f8ff;
+      }
+
+      .collection-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 24px;
+        border-bottom: 1px solid var(--line);
+        padding-bottom: 12px;
+      }
+
+      .collection-header h2 {
+        margin: 0;
+        font-size: 1.5rem;
+        font-weight: 900;
+        background: linear-gradient(135deg, #172033, var(--muted));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+      }
+
+      .grid-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+        gap: 16px;
+        padding-bottom: 40px;
+      }
+
+      .register-toolbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 18px;
+        border-bottom: 1px solid var(--line);
+        padding-bottom: 12px;
+      }
+
+      .register-toolbar h2 {
+        margin: 0;
+        font-size: 1.5rem;
+        font-weight: 900;
+        background: linear-gradient(135deg, #172033, var(--muted));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+      }
+
+      .register-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        gap: 14px;
+        padding-bottom: 40px;
+      }
+
+      .register-card {
+        display: grid;
+        gap: 10px;
+        padding: 12px;
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        background: rgba(255, 255, 255, 0.92);
+        box-shadow: 0 10px 20px rgba(22, 32, 51, 0.08);
+      }
+
+      .register-card .meta {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        font-size: 0.78rem;
+        color: var(--muted);
+      }
+
+      .register-card .title {
+        font-weight: 900;
+        color: var(--ink);
+        line-height: 1.15;
+      }
+
+      .register-card .action {
+        min-height: 40px;
+        border-radius: 10px;
+        border: 1px solid rgba(45, 212, 191, 0.35);
+        background: linear-gradient(135deg, rgba(20, 184, 166, 0.2), rgba(45, 212, 191, 0.1));
+        color: #0f4f49;
+        font-weight: 900;
+        cursor: pointer;
+        touch-action: manipulation;
+      }
+
+      .probability-row {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 8px;
+        align-items: center;
+      }
+
+      .probability-input {
+        width: 100%;
+        min-height: 40px;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: rgba(255, 255, 255, 0.96);
+        color: var(--ink);
+        font: inherit;
+        font-weight: 800;
+        padding: 0 12px;
+        outline: none;
+      }
+
+      .probability-input:focus {
+        border-color: rgba(45, 212, 191, 0.65);
+        box-shadow: 0 0 0 3px rgba(45, 212, 191, 0.16);
+      }
+
+      .probability-unit {
+        font-size: 0.8rem;
+        font-weight: 900;
+        color: var(--muted);
+      }
+
+      .collection-card {
+        background: #ffffff;
+        border: 2px solid var(--line);
+        border-radius: 14px;
+        aspect-ratio: 1 / 1.4;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        padding: 12px;
+        position: relative;
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+        transition: transform 0.2s;
+      }
+
+      .collection-card:active {
+        transform: scale(0.96);
+      }
+
+      .collection-card.owned {
+        border-color: rgba(255, 255, 255, 0.25);
+      }
+
+      .collection-card.unowned {
+        opacity: 0.25;
+        border-style: dashed;
+      }
+
+      .card-badge {
+        align-self: flex-start;
+        font-size: 0.7rem;
+        font-weight: 900;
+        padding: 2px 6px;
+        border-radius: 6px;
+        background: rgba(255, 255, 255, 0.15);
+      }
+
+      .card-info {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .card-info .c-name {
+        font-weight: 800;
+        font-size: 0.9rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .card-info .c-count {
+        font-size: 0.75rem;
+        color: var(--accent);
+        font-weight: bold;
+        margin-top: 2px;
+      }
+
+      .nav-bar {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: calc(var(--nav-height) + var(--safe-bottom));
+        background: rgba(255, 255, 255, 0.94);
+        border-top: 1px solid var(--line);
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        z-index: 10;
+        padding-bottom: var(--safe-bottom);
+      }
+
+      .nav-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        color: var(--muted);
+        font-weight: 700;
+        font-size: 0.85rem;
+        cursor: pointer;
+        gap: 4px;
+        transition: color 0.2s;
+      }
+
+      .nav-item.active {
+        color: var(--accent);
+        background: rgba(45, 212, 191, 0.05);
+      }
+
+      .nav-icon {
+        font-size: 1.2rem;
+        font-weight: 900;
+      }
+
+      button.primary {
+        min-height: 44px;
+        padding: 0 24px;
+        border: 1px solid rgba(45, 212, 191, 0.4);
+        border-radius: 22px;
+        background: linear-gradient(135deg, rgba(20, 184, 166, 0.28), rgba(45, 212, 191, 0.18));
+        color: #0f4f49;
+        font-weight: 900;
+        cursor: pointer;
+        box-shadow: 0 8px 20px rgba(45, 212, 191, 0.2);
+        backdrop-filter: blur(5px);
+        pointer-events: auto;
+        touch-action: manipulation;
+      }
+      
+      .custom-register-form {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        margin-bottom: 24px;
+        padding: 20px;
+        background: #ffffff;
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        box-shadow: 0 8px 16px rgba(0,0,0,0.06);
+      }
+      .custom-register-form label {
+        font-size: 0.85rem;
+        font-weight: bold;
+        color: var(--muted);
+        margin-bottom: -6px;
+      }
+      .custom-register-form input, .custom-register-form select {
+        padding: 12px 14px;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        font-size: 1rem;
+        font-family: inherit;
+        background: var(--bg-main);
+        color: var(--ink);
+        transition: border-color 0.2s;
+      }
+      .custom-register-form input:focus, .custom-register-form select:focus {
+        outline: none;
+        border-color: var(--accent);
+      }
+      .custom-register-form button {
+        min-height: 48px;
+        border-radius: 12px;
+        border: none;
+        background: linear-gradient(135deg, #14b8a6, #2dd4bf);
+        color: #fff;
+        font-weight: 900;
+        font-size: 1rem;
+        cursor: pointer;
+        margin-top: 8px;
+        box-shadow: 0 4px 12px rgba(45, 212, 191, 0.3);
+        transition: transform 0.1s, opacity 0.2s;
+        width: 100%;
+      }
+      .custom-register-form button:active {
+        transform: scale(0.98);
+      }
+
+      .register-action-row {
+        display: block;
+        gap: 10px;
+        margin-top: 8px;
+      }
+
+      .register-action-row.editing {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+      }
+
+      #registerCustomBtn {
+        width: 100%;
+      }
+
+      .register-action-row button.secondary {
+        min-width: 84px;
+        background: linear-gradient(135deg, #e2e8f0, #cbd5e1);
+        color: #162033;
+      }
+
+      @media (max-width: 420px) {
+        .register-action-row.editing {
+          grid-template-columns: 1fr;
+        }
+
+        .register-action-row button.secondary {
+          min-width: 0;
+        }
+      }
+
+      .count-btn {
+        display: none !important;
+      }
+
+      .count-input {
+        display: block;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="packPanel" class="view-panel active">
+      <canvas id="stage" aria-label="3D 카드 팩 개봉 프리뷰"></canvas>
+      <div class="hint" id="hintText">팩 상단을 누른 뒤 가로로 스와이프하세요.</div>
+      <div class="center-controls">
+        <button id="resetBtn" class="primary" type="button">새 카드 팩 열기</button>
+      </div>
+    </div>
+
+    <div id="collectionPanel" class="view-panel">
+      <div class="collection-header">
+        <h2>내 아카이브 컬렉션</h2>
+        <span id="collectionCount" style="font-weight: 800; color: var(--accent);">0장 보유 중 (0종)</span>
+      </div>
+      <div class="grid-container" id="collectionGrid"></div>
+    </div>
+
+    <div id="registerPanel" class="view-panel">
+      <div class="register-toolbar">
+        <h2>카드 등록</h2>
+        <span id="registerCount" style="font-weight: 800; color: var(--accent);">0장 등록됨</span>
+      </div>
+      <div class="custom-register-form">
+        <label for="customCardImage">카드 이미지</label>
+        <input type="file" id="customCardImage" accept="image/*" />
+        
+        <div id="cropEditor" style="display:none; margin: 10px 0; background: rgba(0,0,0,0.1); border-radius: 8px; padding: 10px;">
+          <div style="font-size: 0.85rem; color: #64748b; margin-bottom: 8px;">드래그해서 위치를 조정하고 슬라이더로 크기를 맞추세요.</div>
+          <div style="display: flex; justify-content: center; align-items: center; width: 100%; height: 300px; background: #111; border-radius: 4px; overflow: hidden; position: relative;">
+            <div id="cropBox" style="position: relative; width: 180px; height: 140px; border: 2px dashed rgba(255,255,255,0.5); overflow: hidden; cursor: grab; touch-action: none;">
+              <img id="cropImage" style="position: absolute; transform-origin: top left; pointer-events: none;" />
+            </div>
+          </div>
+          <input type="range" id="cropZoom" min="0.1" max="5" step="0.01" value="1" style="width: 100%; margin-top: 15px;" />
+        </div>
+        
+        <label for="customCardTitle">카드 제목</label>
+        <input type="text" id="customCardTitle" placeholder="직접 입력한 카드 이름" />
+        
+        <label for="customCardRarity">카드 레어도</label>
+        <select id="customCardRarity">
+          <option value="" selected>레어도 선택</option>
+          <option value="common">커먼 (C)</option>
+          <option value="uncommon">언커먼 (U)</option>
+          <option value="rare">레어 (R)</option>
+          <option value="ultraRare">울트라 레어 (UR)</option>
+        </select>
+        
+        <div class="register-action-row" id="registerActionRow">
+          <button id="registerCustomBtn" type="button">나만의 카드 만들기</button>
+          <button id="cancelRegisterEditBtn" type="button" class="secondary" style="display:none;">취소</button>
+        </div>
+      </div>
+      <div class="register-grid" id="registerGrid"></div>
+    </div>
+
+    <nav class="nav-bar">
+      <div class="nav-item active" onclick="switchTab('pack')">
+        <span class="nav-icon">📦</span>
+        <span>팩 개봉</span>
+      </div>
+      <div class="nav-item" onclick="switchTab('register')">
+        <span class="nav-icon">📝</span>
+        <span>카드 등록</span>
+      </div>
+      <div class="nav-item" onclick="switchTab('collection')">
+        <span class="nav-icon">🎴</span>
+        <span>내 컬렉션</span>
+      </div>
+    </nav>
+
+    <script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
+    <script>
+      const canvas = document.querySelector("#stage");
+      const stateText = document.querySelector("#stateText");
+      const hintText = document.querySelector("#hintText");
+      const resetBtn = document.querySelector("#resetBtn");
+      const collectionGrid = document.querySelector("#collectionGrid");
+      const collectionCount = document.querySelector("#collectionCount");
+      const registerGrid = document.querySelector("#registerGrid");
+      const registerCount = document.querySelector("#registerCount");
+      const registerActionRow = document.querySelector("#registerActionRow");
+      const cancelRegisterEditBtn = document.querySelector("#cancelRegisterEditBtn");
+
+      const RARITY_CONFIG = {
+        common: { label: "커먼", symbol: "C", border: "#10b981", foil: 0.15, gold: 0, text: "#064e3b", bgGrad: ["#ecfdf5", "#a7f3d0"] },
+        uncommon: { label: "언커먼", symbol: "U", border: "#0ea5e9", foil: 0.75, gold: 0, text: "#0c4a6e", bgGrad: ["#f0f9ff", "#bae6fd"] },
+        rare: { label: "레어", symbol: "R", border: "#d946ef", foil: 1.25, gold: 0, text: "#fdf4ff", bgGrad: ["#fbcfe8", "#c026d3"] },
+        ultraRare: { label: "울트라 레어", symbol: "UR", border: "#f59e0b", foil: 1.9, gold: 1.2, text: "#fffbeb", bgGrad: ["#fef08a", "#f97316"] },
+      };
+
+      let CARD_POOL = [
+        { id: "cinder-leo", name: "신더 레오", code: "FL", hue: 0.02, rarityKey: "common" },
+        { id: "tide-fin", name: "타이드 핀", code: "TD", hue: 0.57, rarityKey: "common" },
+        { id: "moss-guard", name: "모스 가디언", code: "MS", hue: 0.34, rarityKey: "common" },
+        { id: "volt-runner", name: "볼트 러너", code: "VT", hue: 0.14, rarityKey: "uncommon" },
+        { id: "stone-lynx", name: "스톤 링크스", code: "SL", hue: 0.62, rarityKey: "uncommon" },
+        { id: "aero-wing", name: "에어로 윙", code: "AW", hue: 0.52, rarityKey: "rare" },
+        { id: "ruby-knight", name: "루비 나이트", code: "RN", hue: 0.96, rarityKey: "rare" },
+        { id: "chrono-arc", name: "크로노 아크", code: "UR", hue: 0.12, rarityKey: "ultraRare" },
+        { id: "nebula-dragon", name: "네뷸라 드래곤", code: "GD", hue: 0.75, rarityKey: "ultraRare" },
+      ];
+
+      const APP_STATE = { SEALED: "팩 대기", TEARING: "개봉 중", STACK: "카드 확인", COMPLETE: "완료" };
+      let renderer, scene, camera, raycaster, pointerNdc;
+      let packGroup, packBody, packTop, tearParticles, cardGroup;
+      let cards = [], currentCardIndex = 0;
+      let appState = APP_STATE.SEALED;
+      let drag = null, pointerTilt = new THREE.Vector2(), pointerTargetTilt = new THREE.Vector2();
+      let deviceTargetTilt = new THREE.Vector2(), combinedTilt = new THREE.Vector2();
+      let deviceTiltActive = false, orientationPermissionAsked = false;
+      let collection = loadCollection();
+      let animationJobs = [], lastDragDistance = 0, isCardTransitioning = false, isCardDragging = false;
+      let editingCardId = null;
+      let registerBusy = false;
+      let cropState = { img: null, x: 0, y: 0, scale: 1, isDragging: false, startX: 0, startY: 0 };
+
+      loadCustomCards();
+      resetCollectionStorageOnce();
+      collection = loadCollection();
+      init();
+      animate();
+
+      function loadCustomCards() {
+        try {
+          const deleted = JSON.parse(localStorage.getItem("three-deleted-cards") || "[]");
+          CARD_POOL = CARD_POOL.filter(c => !deleted.includes(c.id));
+
+          const stored = localStorage.getItem("three-custom-cards");
+          if (stored) {
+            const parsed = JSON.parse(stored);
+            parsed.forEach(c => {
+              if (!CARD_POOL.find(p => p.id === c.id)) {
+                CARD_POOL.push(c);
+              }
+            });
+          }
+        } catch(e) { console.error(e); }
+      }
+
+      function init() {
+        scene = new THREE.Scene();
+        scene.background = new THREE.Color(0xf3f8ff);
+        scene.fog = new THREE.Fog(0xf3f8ff, 7, 18);
+
+        camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 0.1, 100);
+        camera.position.set(0, 0.5, 6.8);
+
+        renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.outputColorSpace = THREE.SRGBColorSpace;
+
+        raycaster = new THREE.Raycaster();
+        pointerNdc = new THREE.Vector2();
+
+        scene.add(new THREE.AmbientLight(0xffffff, 0.42));
+        const keyLight = new THREE.DirectionalLight(0xffffff, 0.95);
+        keyLight.position.set(3, 5, 4);
+        scene.add(keyLight);
+
+        createBackground();
+        createPack();
+        renderCollectionTab();
+        renderRegisterTab();
+        updateUi();
+
+        window.addEventListener("resize", onResize);
+        window.addEventListener("deviceorientation", onDeviceOrientation, true);
+        canvas.addEventListener("pointerdown", onPointerDown);
+        canvas.addEventListener("pointermove", onPointerMove);
+        canvas.addEventListener("pointerup", onPointerUp);
+        canvas.addEventListener("pointercancel", onPointerUp);
+        canvas.addEventListener("click", onCanvasClick);
+
+        resetBtn.addEventListener("click", () => {
+          requestDeviceOrientationPermission();
+          resetPack();
+        });
+
+        // Custom Card Registration
+        cropState.img = null;
+        cropState.x = 0;
+        cropState.y = 0;
+        cropState.scale = 1;
+        cropState.isDragging = false;
+        const fileInput = document.querySelector("#customCardImage");
+        const cropEditor = document.querySelector("#cropEditor");
+        const cropBox = document.querySelector("#cropBox");
+        const cropImage = document.querySelector("#cropImage");
+        const cropZoom = document.querySelector("#cropZoom");
+        const raritySelect = document.querySelector("#customCardRarity");
+        
+        function updateCropTransform() {
+          cropImage.style.transform = `translate(${cropState.x}px, ${cropState.y}px) scale(${cropState.scale})`;
+        }
+
+        function updateCropBoxSize() {
+          const isRare = raritySelect.value === "rare" || raritySelect.value === "ultraRare";
+          cropBox.style.width = isRare ? "200px" : "180px";
+          cropBox.style.height = isRare ? "280px" : "140px";
+        }
+
+        raritySelect.addEventListener("change", updateCropBoxSize);
+        updateCropBoxSize();
+
+        fileInput.addEventListener("change", (e) => {
+          const file = e.target.files[0];
+          if (!file) return;
+          const reader = new FileReader();
+          reader.onload = (event) => {
+            const img = new Image();
+            img.onload = () => {
+              cropState.img = img;
+              cropImage.src = img.src;
+              cropEditor.style.display = "block";
+              
+              const boxRatio = parseInt(cropBox.style.width) / parseInt(cropBox.style.height);
+              const imgRatio = img.width / img.height;
+              
+              if (imgRatio > boxRatio) {
+                cropState.scale = parseInt(cropBox.style.height) / img.height;
+              } else {
+                cropState.scale = parseInt(cropBox.style.width) / img.width;
+              }
+              
+              cropZoom.value = cropState.scale;
+              cropState.x = (parseInt(cropBox.style.width) - img.width * cropState.scale) / 2;
+              cropState.y = (parseInt(cropBox.style.height) - img.height * cropState.scale) / 2;
+              updateCropTransform();
+            };
+            img.src = event.target.result;
+          };
+          reader.readAsDataURL(file);
+        });
+
+        cropZoom.addEventListener("input", (e) => {
+          const oldScale = cropState.scale;
+          cropState.scale = parseFloat(e.target.value);
+          const ratio = cropState.scale / oldScale;
+          cropState.x = cropState.x * ratio;
+          cropState.y = cropState.y * ratio;
+          updateCropTransform();
+        });
+
+        cropBox.addEventListener("pointerdown", (e) => {
+          if (!cropState.img) return;
+          cropState.isDragging = true;
+          cropState.startX = e.clientX - cropState.x;
+          cropState.startY = e.clientY - cropState.y;
+          cropBox.setPointerCapture(e.pointerId);
+        });
+
+        cropBox.addEventListener("pointermove", (e) => {
+          if (!cropState.isDragging) return;
+          cropState.x = e.clientX - cropState.startX;
+          cropState.y = e.clientY - cropState.startY;
+          updateCropTransform();
+        });
+
+        const stopDrag = () => { cropState.isDragging = false; };
+        cropBox.addEventListener("pointerup", stopDrag);
+        cropBox.addEventListener("pointercancel", stopDrag);
+
+        const registerActionHandler = (event) => {
+          const button = event.target.closest("button");
+          if (!button || !registerActionRow.contains(button) || registerBusy) return;
+
+          if (button.id === "cancelRegisterEditBtn") {
+            if (!editingCardId) return;
+            resetRegisterEditor();
+            return;
+          }
+
+          if (button.id !== "registerCustomBtn") return;
+
+          registerBusy = true;
+          const btn = document.querySelector("#registerCustomBtn");
+          if (btn) {
+            btn.textContent = "저장 중...";
+            btn.disabled = true;
+          }
+
+          try {
+            const titleInput = document.querySelector("#customCardTitle");
+            const raritySelect = document.querySelector("#customCardRarity");
+            const title = titleInput.value.trim();
+            const rarity = raritySelect.value;
+            const existingCard = editingCardId ? CARD_POOL.find((c) => c.id === editingCardId) : null;
+
+            if (!cropState.img && !existingCard) {
+              alert("이미지와 제목을 입력해 주세요!");
+              return;
+            }
+
+            if (!title) {
+              alert("제목을 입력해 주세요!");
+              return;
+            }
+
+            if (!rarity) {
+              alert("레어도를 선택해 주세요!");
+              return;
+            }
+
+            let dataUrl = existingCard ? existingCard.imageUrl : null;
+
+            if (cropState.img) {
+              const cv = document.createElement("canvas");
+              const isRare = rarity === "rare" || rarity === "ultraRare";
+              cv.width = isRare ? 400 : 360;
+              cv.height = isRare ? 560 : 280;
+              const ctx = cv.getContext("2d");
+
+              const renderScale = 2.0;
+              ctx.fillStyle = "#fff";
+              ctx.fillRect(0, 0, cv.width, cv.height);
+              ctx.translate(cropState.x * renderScale, cropState.y * renderScale);
+              ctx.scale(cropState.scale * renderScale, cropState.scale * renderScale);
+              ctx.drawImage(cropState.img, 0, 0);
+              ctx.setTransform(1, 0, 0, 1, 0, 0);
+
+              dataUrl = cv.toDataURL("image/jpeg", 0.9);
+            }
+
+            if (existingCard) {
+              existingCard.name = title;
+              existingCard.rarityKey = rarity;
+              if (dataUrl) existingCard.imageUrl = dataUrl;
+
+              let customStored = [];
+              try { customStored = JSON.parse(localStorage.getItem("three-custom-cards") || "[]"); } catch (e) {}
+              const storedIdx = customStored.findIndex((c) => c.id === editingCardId);
+              if (storedIdx > -1) {
+                customStored[storedIdx].name = title;
+                customStored[storedIdx].rarityKey = rarity;
+                if (dataUrl) customStored[storedIdx].imageUrl = dataUrl;
+                localStorage.setItem("three-custom-cards", JSON.stringify(customStored));
+              }
+
+              alert("카드가 수정되었습니다.");
+            } else {
+              const newCard = {
+                id: "custom-" + Date.now(),
+                name: title,
+                code: "CST",
+                hue: Math.random(),
+                rarityKey: rarity,
+                isCustom: true,
+                imageUrl: dataUrl,
+              };
+
+              CARD_POOL.push(newCard);
+              let customStored = [];
+              try { customStored = JSON.parse(localStorage.getItem("three-custom-cards") || "[]"); } catch (e) {}
+              customStored.push(newCard);
+              try {
+                localStorage.setItem("three-custom-cards", JSON.stringify(customStored));
+              } catch (e) {
+                alert("저장 공간이 부족해 더 이상 카드를 저장할 수 없습니다.");
+                return;
+              }
+              registerCard(newCard.id);
+              alert("나만의 카드가 등록되었습니다.");
+            }
+
+            editingCardId = null;
+            resetRegisterEditor();
+            renderRegisterTab();
+            renderCollectionTab();
+          } catch (err) {
+            console.error("register card error:", err);
+            alert("카드 저장 중 오류가 발생했습니다.");
+          } finally {
+            registerBusy = false;
+            const currentBtn = document.querySelector("#registerCustomBtn");
+            if (currentBtn) {
+              currentBtn.disabled = false;
+              currentBtn.textContent = editingCardId ? "카드 수정 완료" : "나만의 카드 만들기";
+            }
+          }
+        };
+
+        registerActionRow.addEventListener("click", registerActionHandler);
+        setRegisterActionMode(false);
+      }
+
+      function switchTab(tabName) {
+        document.querySelectorAll(".view-panel").forEach((panel) => panel.classList.remove("active"));
+        document.querySelectorAll(".nav-item").forEach((item) => item.classList.remove("active"));
+
+        const eventIdx = tabName === "pack" ? 0 : tabName === "register" ? 1 : 2;
+        document.querySelectorAll(".nav-item")[eventIdx].classList.add("active");
+
+        if (tabName === "pack") {
+          document.getElementById("packPanel").classList.add("active");
+        } else if (tabName === "register") {
+          document.getElementById("registerPanel").classList.add("active");
+          renderRegisterTab();
+        } else {
+          document.getElementById("collectionPanel").classList.add("active");
+          renderCollectionTab();
+        }
+      }
+
+      window.switchTab = switchTab;
+
+      function createBackground() {
+        const pCount = 180;
+        const geom = new THREE.BufferGeometry();
+        const positions = [];
+        const colors = [];
+        for (let i = 0; i < pCount; i++) {
+          positions.push((Math.random() - 0.5) * 15, (Math.random() - 0.5) * 10, -Math.random() * 8 - 1);
+          const color = new THREE.Color().setHSL(0.5 + Math.random() * 0.2, 0.6, 0.6);
+          colors.push(color.r, color.g, color.b);
+        }
+        geom.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+        geom.setAttribute("color", new THREE.Float32BufferAttribute(colors, 3));
+        const mat = new THREE.PointsMaterial({ size: 0.04, vertexColors: true, transparent: true, opacity: 0.6 });
+        scene.add(new THREE.Points(geom, mat));
+      }
+
+      function createPackTexture() {
+        const cv = document.createElement("canvas");
+        cv.width = 512;
+        cv.height = 768;
+        const ctx = cv.getContext("2d");
+        const grad = ctx.createLinearGradient(0, 0, 512, 768);
+        grad.addColorStop(0, "#0fa893");
+        grad.addColorStop(0.35, "#5beed8");
+        grad.addColorStop(0.7, "#14b8a6");
+        grad.addColorStop(1, "#0d6e62");
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, 512, 768);
+
+        ctx.globalAlpha = 0.16;
+        ctx.strokeStyle = "#ffffff";
+        ctx.lineWidth = 4;
+        for (let i = -400; i < 1024; i += 32) {
+          ctx.beginPath();
+          ctx.moveTo(i, 0);
+          ctx.lineTo(i - 200, 768);
+          ctx.stroke();
+        }
+        ctx.globalAlpha = 0.09;
+        ctx.lineWidth = 2;
+        for (let i = -400; i < 1024; i += 18) {
+          ctx.beginPath();
+          ctx.moveTo(i, 768);
+          ctx.lineTo(i - 250, 0);
+          ctx.stroke();
+        }
+        ctx.globalAlpha = 1;
+
+        ctx.fillStyle = "rgba(0,0,0,0.22)";
+        ctx.fillRect(0, 0, 512, 100);
+        ctx.strokeStyle = "rgba(255,255,255,0.9)";
+        ctx.setLineDash([10, 7]);
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.moveTo(0, 100);
+        ctx.lineTo(512, 100);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.globalCompositeOperation = "lighter";
+        ctx.globalAlpha = 0.22;
+        const sgrad = ctx.createRadialGradient(256, 420, 20, 256, 420, 220);
+        sgrad.addColorStop(0, "#ffffff");
+        sgrad.addColorStop(1, "rgba(255,255,255,0)");
+        ctx.fillStyle = sgrad;
+        ctx.fillRect(20, 230, 472, 380);
+        ctx.globalCompositeOperation = "source-over";
+        ctx.globalAlpha = 1;
+
+        const tex = new THREE.CanvasTexture(cv);
+        tex.colorSpace = THREE.SRGBColorSpace;
+        return tex;
+      }
+      function createSparkleTexture() {
+        const cv = document.createElement("canvas");
+        cv.width = 128; cv.height = 128;
+        const ctx = cv.getContext("2d");
+        const grad = ctx.createRadialGradient(64, 64, 0, 64, 64, 64);
+        grad.addColorStop(0, "rgba(255,255,255,1)");
+        grad.addColorStop(0.3, "rgba(255,255,255,0.75)");
+        grad.addColorStop(0.6, "rgba(255,255,255,0.2)");
+        grad.addColorStop(1, "rgba(255,255,255,0)");
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, 128, 128);
+        ctx.globalCompositeOperation = "lighter";
+        const vGrad = ctx.createLinearGradient(64, 0, 64, 128);
+        vGrad.addColorStop(0, "rgba(255,255,255,0)");
+        vGrad.addColorStop(0.5, "rgba(255,255,255,1)");
+        vGrad.addColorStop(1, "rgba(255,255,255,0)");
+        ctx.fillStyle = vGrad;
+        ctx.fillRect(60, 0, 8, 128);
+        const hGrad = ctx.createLinearGradient(0, 64, 128, 64);
+        hGrad.addColorStop(0, "rgba(255,255,255,0)");
+        hGrad.addColorStop(0.5, "rgba(255,255,255,1)");
+        hGrad.addColorStop(1, "rgba(255,255,255,0)");
+        ctx.fillStyle = hGrad;
+        ctx.fillRect(0, 60, 128, 8);
+        return new THREE.CanvasTexture(cv);
+      }
+
+      function createAuraTexture(cfg) {
+        const cv = document.createElement("canvas");
+        cv.width = 256; cv.height = 256;
+        const ctx = cv.getContext("2d");
+        const grad = ctx.createRadialGradient(128, 128, 30, 128, 128, 128);
+        grad.addColorStop(0, cfg.border);
+        grad.addColorStop(0.45, cfg.bgGrad[1]);
+        grad.addColorStop(1, "rgba(0,0,0,0)");
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, 256, 256);
+        return new THREE.CanvasTexture(cv);
+      }
+
+      function createRayTexture() {
+        const cv = document.createElement("canvas");
+        cv.width = 512; cv.height = 512;
+        const ctx = cv.getContext("2d");
+        ctx.translate(256, 256);
+        const rays = 18;
+        for (let i = 0; i < rays; i++) {
+          ctx.save();
+          ctx.rotate((i / rays) * Math.PI * 2);
+          const hue = (i / rays) * 360;
+          const rg = ctx.createLinearGradient(0, 0, 260, 0);
+          rg.addColorStop(0, `hsla(${hue}, 92%, 70%, 0.55)`);
+          rg.addColorStop(0.45, `hsla(${hue}, 92%, 70%, 0.35)`);
+          rg.addColorStop(0.8, `hsla(${hue}, 92%, 70%, 0.08)`);
+          rg.addColorStop(1, `hsla(${hue}, 92%, 70%, 0)`);
+          ctx.fillStyle = rg;
+          ctx.beginPath();
+          ctx.moveTo(0, 0);
+          ctx.lineTo(260, -20);
+          ctx.lineTo(260, 20);
+          ctx.closePath();
+          ctx.fill();
+          ctx.restore();
+        }
+        const cgrad = ctx.createRadialGradient(0, 0, 0, 0, 0, 90);
+        cgrad.addColorStop(0, "rgba(255,255,255,0.45)");
+        cgrad.addColorStop(1, "rgba(255,255,255,0)");
+        ctx.fillStyle = cgrad;
+        ctx.fillRect(-90, -90, 180, 180);
+
+        ctx.globalCompositeOperation = "destination-in";
+        const maskGrad = ctx.createRadialGradient(0, 0, 0, 0, 0, 256);
+        maskGrad.addColorStop(0, "rgba(0,0,0,1)");
+        maskGrad.addColorStop(0.7, "rgba(0,0,0,1)");
+        maskGrad.addColorStop(1, "rgba(0,0,0,0)");
+        ctx.fillStyle = maskGrad;
+        ctx.fillRect(-256, -256, 512, 512);
+        ctx.globalCompositeOperation = "source-over";
+
+        return new THREE.CanvasTexture(cv);
+      }
+
+      function createBurstTexture() {
+        const cv = document.createElement("canvas");
+        cv.width = 256; cv.height = 256;
+        const ctx = cv.getContext("2d");
+        const grad = ctx.createRadialGradient(128, 128, 0, 128, 128, 128);
+        grad.addColorStop(0, "rgba(255,255,255,1)");
+        grad.addColorStop(0.25, "rgba(255,250,200,0.9)");
+        grad.addColorStop(0.5, "rgba(180,255,240,0.6)");
+        grad.addColorStop(1, "rgba(255,255,255,0)");
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, 256, 256);
+        return new THREE.CanvasTexture(cv);
+      }
+
+      function attachCardEffects(cardMesh, rarityKey) {
+        const cfg = RARITY_CONFIG[rarityKey];
+        const effects = new THREE.Group();
+        effects.visible = false;
+        effects.userData = { rarityKey, fadeIn: 0 };
+
+        const auraMat = new THREE.MeshBasicMaterial({
+          map: createAuraTexture(cfg),
+          transparent: true,
+          opacity: 0,
+          blending: THREE.AdditiveBlending,
+          depthWrite: false,
+        });
+        const aura = new THREE.Mesh(new THREE.PlaneGeometry(3.8, 4.8), auraMat);
+        aura.position.z = -0.05;
+        effects.add(aura);
+        effects.userData.aura = aura;
+
+        if (rarityKey === "rare" || rarityKey === "ultraRare") {
+          const sparkleTex = createSparkleTexture();
+          const count = rarityKey === "ultraRare" ? 28 : 16;
+          const sparkles = [];
+          for (let i = 0; i < count; i++) {
+            const color = rarityKey === "ultraRare"
+              ? new THREE.Color().setHSL((i / count + Math.random() * 0.1) % 1, 0.9, 0.72)
+              : new THREE.Color(cfg.border);
+            const m = new THREE.SpriteMaterial({
+              map: sparkleTex,
+              color,
+              transparent: true,
+              opacity: 0,
+              blending: THREE.AdditiveBlending,
+              depthWrite: false,
+            });
+            const s = new THREE.Sprite(m);
+            const angle = (i / count) * Math.PI * 2 + Math.random() * 0.4;
+            const r = 0.95 + Math.random() * 0.9;
+            s.position.set(Math.cos(angle) * r, Math.sin(angle) * r * 1.25, 0.08);
+            const sc = 0.18 + Math.random() * 0.22;
+            s.scale.setScalar(sc);
+            s.userData = {
+              baseAngle: angle,
+              baseR: r,
+              phase: Math.random() * Math.PI * 2,
+              speed: 0.5 + Math.random() * 0.8,
+              baseScale: sc,
+            };
+            effects.add(s);
+            sparkles.push(s);
+          }
+          effects.userData.sparkles = sparkles;
+        }
+
+        if (rarityKey === "ultraRare") {
+          const rayMat = new THREE.MeshBasicMaterial({
+            map: createRayTexture(),
+            transparent: true,
+            opacity: 0,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false,
+          });
+          const rays = new THREE.Mesh(new THREE.PlaneGeometry(5.4, 5.4), rayMat);
+          rays.position.z = -0.09;
+          effects.add(rays);
+          effects.userData.rays = rays;
+        }
+
+        cardMesh.add(effects);
+        cardMesh.userData.effects = effects;
+      }
+
+      function updateCurrentCardEffects() {
+        cards.forEach((c, idx) => {
+          const fx = c.userData.effects;
+          if (!fx) return;
+          if (idx === currentCardIndex) {
+            fx.visible = true;
+            fx.userData.fadeIn = 0;
+            animateValue(0, 1, 460, (t) => {
+              const ease = 1 - Math.pow(1 - t, 3);
+              fx.userData.fadeIn = ease;
+            });
+          } else {
+            fx.visible = false;
+            fx.userData.fadeIn = 0;
+          }
+        });
+      }
+
+      function createBurstTexture() {
+        const cv = document.createElement("canvas");
+        cv.width = 512;
+        cv.height = 512;
+        const ctx = cv.getContext("2d");
+        const grad = ctx.createRadialGradient(256, 256, 20, 256, 256, 256);
+        grad.addColorStop(0, "rgba(255, 255, 255, 1)");
+        grad.addColorStop(0.3, "rgba(255, 230, 150, 0.8)");
+        grad.addColorStop(1, "rgba(255, 255, 255, 0)");
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, 512, 512);
+        
+        ctx.translate(256, 256);
+        ctx.fillStyle = "rgba(255, 255, 255, 0.4)";
+        for (let i = 0; i < 16; i++) {
+          ctx.rotate(Math.PI / 8);
+          ctx.beginPath();
+          ctx.moveTo(-15, 0);
+          ctx.lineTo(15, 0);
+          ctx.lineTo(0, 250);
+          ctx.fill();
+        }
+        return new THREE.CanvasTexture(cv);
+      }
+
+      function playUltraRareFlash(card, onComplete) {
+        const fx = card.userData.effects;
+        let finished = false;
+        let fallbackTimer = null;
+
+        if (fx) {
+          fx.visible = false;
+          fx.userData.fadeIn = 0;
+        }
+
+        const flashMat = new THREE.MeshBasicMaterial({
+          map: createBurstTexture(),
+          transparent: true,
+          opacity: 0,
+          blending: THREE.AdditiveBlending,
+          depthWrite: false,
+          depthTest: false,
+        });
+        const flash = new THREE.Mesh(new THREE.PlaneGeometry(20, 20), flashMat);
+        flash.position.set(0, 0, 1.5);
+        flash.renderOrder = 1000;
+        scene.add(flash);
+
+        const raysMat = new THREE.MeshBasicMaterial({
+          map: createRayTexture(),
+          transparent: true,
+          opacity: 0,
+          blending: THREE.AdditiveBlending,
+          depthWrite: false,
+          depthTest: false,
+        });
+        const rays = new THREE.Mesh(new THREE.PlaneGeometry(14, 14), raysMat);
+        rays.position.set(0, 0, 1.4);
+        rays.renderOrder = 998;
+        scene.add(rays);
+
+        const sparkleTex = createSparkleTexture();
+        const sparkles = [];
+        const sparkleGroup = new THREE.Group();
+        sparkleGroup.position.set(0, 0, 1.3);
+        sparkleGroup.renderOrder = 999;
+        scene.add(sparkleGroup);
+
+        const sparkleCount = 32;
+        for (let i = 0; i < sparkleCount; i++) {
+          const hue = (i / sparkleCount + Math.random() * 0.08) % 1;
+          const color = new THREE.Color().setHSL(hue, 0.92, 0.72);
+          const m = new THREE.SpriteMaterial({
+            map: sparkleTex,
+            color: color,
+            transparent: true,
+            opacity: 0,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false,
+            depthTest: false,
+          });
+          const s = new THREE.Sprite(m);
+          const angle = (i / sparkleCount) * Math.PI * 2 + Math.random() * 0.35;
+          const speed = 3.5 + Math.random() * 3.5;
+          s.userData = { angle, speed, baseScale: 0.30 + Math.random() * 0.32 };
+          s.scale.setScalar(s.userData.baseScale);
+          sparkleGroup.add(s);
+          sparkles.push(s);
+        }
+
+        const finalize = () => {
+          if (finished) return;
+          finished = true;
+          if (fallbackTimer) {
+            clearTimeout(fallbackTimer);
+            fallbackTimer = null;
+          }
+          try {
+            scene.remove(flash);
+            scene.remove(rays);
+            scene.remove(sparkleGroup);
+            flashMat.map?.dispose?.();
+            flashMat.dispose?.();
+            raysMat.map?.dispose?.();
+            raysMat.dispose?.();
+            sparkles.forEach((s) => s.material.dispose?.());
+            sparkleTex.dispose?.();
+          } catch (err) {}
+          onComplete();
+        };
+
+        fallbackTimer = window.setTimeout(finalize, 700);
+
+        animateValue(0, 1, 500, (t) => {
+          if (t < 0.20) {
+            const fp = t / 0.20;
+            flash.material.opacity = Math.sin(fp * Math.PI) * 1.0;
+            flash.scale.setScalar(0.3 + fp * 2.2);
+          } else {
+            flash.material.opacity = 0;
+          }
+
+          if (t > 0.05 && t < 0.95) {
+            const rp = (t - 0.05) / 0.90;
+            rays.material.opacity = Math.sin(rp * Math.PI) * 0.4;
+            rays.scale.setScalar(0.5 + rp * 1.6);
+            rays.rotation.z = (1 - Math.pow(1 - rp, 3)) * Math.PI * 0.5;
+          } else {
+            rays.material.opacity = 0;
+          }
+
+          if (t > 0.04) {
+            const sp = (t - 0.04) / 0.96;
+            sparkles.forEach((s) => {
+              const ud = s.userData;
+              const radius = ud.speed * sp;
+              s.position.x = Math.cos(ud.angle) * radius;
+              s.position.y = Math.sin(ud.angle) * radius;
+              s.material.opacity = Math.max(0, 1 - sp * 1.1);
+              s.scale.setScalar(ud.baseScale * (1 - sp * 0.35));
+            });
+          }
+
+          if (fx && t > 0.08) {
+            fx.visible = true;
+            const ep = Math.min(1, (t - 0.08) / 0.85);
+            fx.userData.fadeIn = 1 - Math.pow(1 - ep, 3);
+          }
+        }, finalize);
+      }
+
+      function createPack() {
+        if (packGroup) scene.remove(packGroup);
+        packGroup = new THREE.Group();
+
+        const packTex = createPackTexture();
+        const sideMat = new THREE.MeshStandardMaterial({
+          color: 0x0fb5a3,
+          metalness: 0.65,
+          roughness: 0.28,
+          emissive: 0x68d8cf,
+          emissiveIntensity: 0.18,
+          transparent: true,
+        });
+        const faceMat = new THREE.MeshStandardMaterial({
+          map: packTex,
+          metalness: 0.55,
+          roughness: 0.22,
+          emissive: 0x2e6f6b,
+          emissiveIntensity: 0.32,
+          transparent: true,
+        });
+        const packMats = [sideMat, sideMat.clone(), sideMat.clone(), sideMat.clone(), faceMat, faceMat.clone()];
+
+        packBody = new THREE.Mesh(new THREE.BoxGeometry(2.2, 3.1, 0.18), packMats);
+        packBody.userData.baseY = packBody.position.y = -0.1;
+        packGroup.add(packBody);
+
+        const topMat = new THREE.MeshStandardMaterial({
+          color: 0x12a092,
+          metalness: 0.7,
+          roughness: 0.22,
+          emissive: 0x68d8cf,
+          emissiveIntensity: 0.3,
+          transparent: true,
+        });
+        packTop = new THREE.Mesh(new THREE.BoxGeometry(2.26, 0.46, 0.2), topMat);
+        packTop.position.y = 1.45;
+        packTop.userData.basePosition = packTop.position.clone();
+        packTop.userData.baseRotation = packTop.rotation.clone();
+        packGroup.add(packTop);
+
+        const stripMat = new THREE.MeshStandardMaterial({
+          color: 0xfbbf24,
+          metalness: 0.85,
+          roughness: 0.18,
+          emissive: 0xfbbf24,
+          emissiveIntensity: 0.55,
+          transparent: true,
+        });
+        const tearStrip = new THREE.Mesh(new THREE.BoxGeometry(2.3, 0.09, 0.21), stripMat);
+        tearStrip.position.y = 1.18;
+        tearStrip.userData.basePosition = tearStrip.position.clone();
+        tearStrip.userData.baseRotation = tearStrip.rotation.clone();
+        packGroup.add(tearStrip);
+        packGroup.userData.tearStrip = tearStrip;
+
+        const burstMat = new THREE.MeshBasicMaterial({
+          map: createBurstTexture(),
+          transparent: true,
+          opacity: 0,
+          blending: THREE.AdditiveBlending,
+          depthWrite: false,
+        });
+        const lightBurst = new THREE.Mesh(new THREE.PlaneGeometry(2.8, 2.8), burstMat);
+        lightBurst.position.set(0, 0.5, -1.5);
+        packGroup.add(lightBurst);
+        packGroup.userData.lightBurst = lightBurst;
+
+        tearParticles = new THREE.Group();
+        const sparkleTex = createSparkleTexture();
+        for (let i = 0; i < 28; i++) {
+          const isSparkle = i < 18;
+          let particle;
+          if (isSparkle) {
+            const tint = i % 3 === 0 ? 0xfbbf24 : i % 3 === 1 ? 0xffffff : 0x68d8cf;
+            const m = new THREE.SpriteMaterial({
+              map: sparkleTex,
+              color: tint,
+              transparent: true,
+              blending: THREE.AdditiveBlending,
+              depthWrite: false,
+            });
+            particle = new THREE.Sprite(m);
+            particle.scale.setScalar(0.14 + Math.random() * 0.18);
+          } else {
+            const m = new THREE.MeshBasicMaterial({ color: 0x68d8cf, transparent: true });
+            particle = new THREE.Mesh(new THREE.TetrahedronGeometry(0.05), m);
+          }
+          particle.position.set((Math.random() - 0.5) * 2, 1.2 + Math.random() * 0.4, 0.12 + Math.random() * 0.18);
+          particle.userData.vel = new THREE.Vector3(
+            (Math.random() - 0.5) * 0.06,
+            Math.random() * 0.045 + 0.012,
+            (Math.random() - 0.5) * 0.025
+          );
+          particle.userData.spin = (Math.random() - 0.5) * 0.22;
+          tearParticles.add(particle);
+        }
+        tearParticles.visible = false;
+        packGroup.add(tearParticles);
+
+        scene.add(packGroup);
+      }
+
+      function createCards() {
+        if (cardGroup) scene.remove(cardGroup);
+        cardGroup = new THREE.Group();
+        cardGroup.position.set(0, -0.05, 0.1);
+
+        const weightsSnapshot = loadWeights();
+        const cardWeightOf = (c) => {
+          const raw = weightsSnapshot[c.id];
+          if (raw === undefined || raw === null || raw === "") return 10;
+          const numeric = Number(raw);
+          return Number.isFinite(numeric) ? Math.max(0, numeric) : 10;
+        };
+        const selectFromRarity = (rarityKey) => {
+          const pool = CARD_POOL.filter((c) => c.rarityKey === rarityKey && cardWeightOf(c) > 0);
+          if (pool.length === 0) return null;
+          const totalWeight = pool.reduce((sum, c) => sum + cardWeightOf(c), 0);
+          let rand = Math.random() * totalWeight;
+          for (const c of pool) {
+            const w = cardWeightOf(c);
+            if (rand < w) return c;
+            rand -= w;
+          }
+          return pool[pool.length - 1];
+        };
+
+        const drawn = [];
+        for (let i = 0; i < 5; i++) {
+          const roll = Math.random();
+          let key = "common";
+          if (i === 4) {
+            if (roll > 0.85) key = "ultraRare";
+            else if (roll > 0.55) key = "rare";
+            else key = "uncommon";
+          } else if (roll > 0.75) {
+            key = "uncommon";
+          }
+
+          let selected = selectFromRarity(key);
+          if (!selected) {
+            const fallbackOrder = ["common", "uncommon", "rare", "ultraRare"].filter((k) => k !== key);
+            for (const k of fallbackOrder) {
+              selected = selectFromRarity(k);
+              if (selected) break;
+            }
+          }
+          if (selected) drawn.push(selected);
+        }
+
+        const rarityWeight = { common: 1, uncommon: 2, rare: 3, ultraRare: 4 };
+        drawn.sort((a, b) => rarityWeight[a.rarityKey] - rarityWeight[b.rarityKey]);
+
+        cards = drawn.map((data, idx) => {
+          const mesh = createCardMesh(data);
+          mesh.position.set(0, -0.1 - idx * 0.03, -idx * 0.05);
+          mesh.userData = { index: idx, card: data, faceUp: true, saved: false };
+          attachCardEffects(mesh, data.rarityKey);
+          cardGroup.add(mesh);
+          return mesh;
+        });
+
+        scene.add(cardGroup);
+        currentCardIndex = 0;
+        if (typeof resetBtn !== "undefined" && resetBtn) resetBtn.style.display = "none";
+
+        if (cards.length === 0) {
+          appState = APP_STATE.COMPLETE;
+          if (resetBtn) resetBtn.style.display = "block";
+          if (hintText) hintText.textContent = "등록 가능한 카드가 없습니다. 카드 등록에서 가중치를 1 이상으로 설정해 주세요.";
+          return;
+        }
+
+        cardGroup.position.set(0, -0.2, -0.5);
+        cardGroup.scale.setScalar(1.2);
+        animateValue(0, 1, 780, (t) => {
+          const ease = 1 - Math.pow(1 - t, 3);
+          cardGroup.position.y = -0.2 + ease * 0.41;
+          cardGroup.position.z = -0.5 + ease * 0.6;
+          cardGroup.scale.setScalar(1.2 + ease * 0.8);
+        }, () => {
+          updateCurrentCardEffects();
+        });
+      }
+
+      function createCardMesh(cardData) {
+        const group = new THREE.Group();
+        const frontTex = createCardCanvasTexture(cardData);
+        const rarity = RARITY_CONFIG[cardData.rarityKey];
+        const frontMat = new THREE.ShaderMaterial({
+          uniforms: {
+            map: { value: frontTex },
+            time: { value: 0 },
+            tilt: { value: new THREE.Vector2() },
+            hueShift: { value: cardData.hue },
+            foilPower: { value: rarity.foil },
+            goldPower: { value: rarity.gold },
+          },
+          vertexShader: `
+            varying vec2 vUv; varying vec3 vNormal; varying vec3 vWorldPos;
+            void main() {
+              vUv = uv; vNormal = normalize(normalMatrix * normal);
+              vec4 wp = modelMatrix * vec4(position, 1.0); vWorldPos = wp.xyz;
+              gl_Position = projectionMatrix * viewMatrix * wp;
+            }
+          `,
+          fragmentShader: `
+            uniform sampler2D map; uniform float time; uniform vec2 tilt;
+            uniform float hueShift; uniform float foilPower; uniform float goldPower;
+            varying vec2 vUv; varying vec3 vNormal; varying vec3 vWorldPos;
+            vec3 hsv2rgb(vec3 c) {
+              vec4 K = vec4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
+              vec3 p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);
+              return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
+            }
+            void main() {
+              vec4 base = texture2D(map, vUv);
+              vec3 viewDir = normalize(cameraPosition - vWorldPos);
+              float fresnel = pow(1.0 - clamp(dot(normalize(vNormal), viewDir), 0.0, 1.0), 2.0);
+              float diag = dot(vUv, normalize(vec2(0.7 + tilt.x, 0.5 + tilt.y)));
+              float streak = sin((diag + tilt.x * 0.1) * 30.0 + time * 2.0) * 0.5 + 0.5;
+              float holo = clamp(streak * 0.42 + fresnel * 0.9, 0.0, 1.0) * foilPower;
+              vec3 outColor = base.rgb;
+              outColor += vec3(1.0) * (holo * 0.14);
+              gl_FragColor = vec4(clamp(outColor, 0.0, 1.0), base.a);
+            }
+          `,
+        });
+
+        const geom = new THREE.PlaneGeometry(1.6, 2.24);
+        const frontMesh = new THREE.Mesh(geom, frontMat);
+        frontMesh.position.z = 0.018;
+        group.add(frontMesh);
+
+        const edge = new THREE.Mesh(new THREE.BoxGeometry(1.64, 2.28, 0.025), new THREE.MeshBasicMaterial({ color: 0x111625 }));
+        edge.position.z = -0.02;
+        group.add(edge);
+
+        return group;
+      }
+
+      function createCardCanvasTexture(card) {
+        const cv = document.createElement("canvas");
+        cv.width = 400;
+        cv.height = 560;
+        const ctx = cv.getContext("2d");
+        const cfg = RARITY_CONFIG[card.rarityKey];
+        const isRare = card.rarityKey === "rare" || card.rarityKey === "ultraRare";
+
+        function drawBaseBackground() {
+          if (isRare) {
+            const grad = ctx.createLinearGradient(0, 0, 400, 560);
+            grad.addColorStop(0, cfg.bgGrad[0]);
+            grad.addColorStop(1, cfg.bgGrad[1]);
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, 400, 560);
+            
+            ctx.globalAlpha = 0.12 + cfg.foil * 0.06;
+            ctx.strokeStyle = "#ffffff";
+            ctx.lineWidth = 3;
+            for(let i = -200; i < 800; i += 45) {
+              ctx.beginPath();
+              ctx.moveTo(i, 0);
+              ctx.lineTo(i - 200, 560);
+              ctx.stroke();
+            }
+            ctx.globalAlpha = 1.0;
+          } else {
+            ctx.fillStyle = "#ffffff";
+            ctx.fillRect(0, 0, 400, 560);
+            
+            const grad = ctx.createRadialGradient(200, 450, 50, 200, 450, 350);
+            grad.addColorStop(0, cfg.bgGrad[1]);
+            grad.addColorStop(1, "#ffffff");
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 300, 400, 260);
+            
+            ctx.fillStyle = "rgba(0,0,0,0.03)";
+            ctx.fillRect(20, 20, 360, 280);
+          }
+        }
+
+        function drawOverlays(isCustom) {
+          ctx.textAlign = "center";
+          if (isRare) {
+            if (!isCustom) {
+              ctx.fillStyle = "rgba(0,0,0,0.4)";
+              ctx.fillRect(0, 340, 400, 60);
+              ctx.fillRect(40, 480, 320, 50);
+
+              ctx.fillStyle = "rgba(255,255,255,0.3)";
+              ctx.font = "900 80px sans-serif";
+              ctx.fillText(card.code, 200, 180);
+            }
+
+            ctx.shadowColor = "rgba(0,0,0,0.9)";
+            ctx.shadowBlur = isCustom ? 10 : 0;
+            ctx.fillStyle = "#ffffff";
+            ctx.font = "900 36px sans-serif";
+            ctx.fillText(card.name, 200, 382);
+
+            ctx.shadowColor = isCustom ? "rgba(0,0,0,0.9)" : cfg.border;
+            ctx.shadowBlur = isCustom ? 10 : 15;
+            ctx.fillStyle = isCustom ? "#ffffff" : cfg.text;
+            ctx.font = "bold 24px sans-serif";
+            ctx.fillText(`${cfg.label}`, 200, 515);
+            ctx.shadowBlur = 0;
+          } else {
+            if (!isCustom) {
+              ctx.fillStyle = "rgba(0,0,0,0.05)";
+              ctx.font = "900 80px sans-serif";
+              ctx.fillText(card.code, 200, 180);
+            }
+
+            ctx.fillStyle = "#162033";
+            ctx.font = "900 32px sans-serif";
+            ctx.fillText(card.name, 200, 380);
+
+            ctx.strokeStyle = cfg.border;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(100, 410);
+            ctx.lineTo(300, 410);
+            ctx.stroke();
+
+            ctx.fillStyle = cfg.border;
+            ctx.font = "bold 20px sans-serif";
+            ctx.fillText(cfg.label, 200, 450);
+
+            ctx.strokeStyle = "#e2e8f0";
+            ctx.lineWidth = 8;
+            ctx.strokeRect(4, 4, 392, 552);
+          }
+        }
+
+        drawBaseBackground();
+        drawOverlays(false);
+
+        const tex = new THREE.CanvasTexture(cv);
+        tex.colorSpace = THREE.SRGBColorSpace;
+
+        if (card.isCustom && card.imageUrl) {
+          const img = new Image();
+          img.onload = () => {
+            drawBaseBackground();
+            if (isRare) {
+              ctx.drawImage(img, 0, 0, 400, 560);
+            } else {
+              ctx.drawImage(img, 20, 20, 360, 280);
+            }
+            drawOverlays(true);
+            tex.needsUpdate = true;
+          };
+          img.src = card.imageUrl;
+        }
+
+        return tex;
+      }
+
+      function createTextPlane(text, scale, color, font) {
+        const cv = document.createElement("canvas");
+        cv.width = 256;
+        cv.height = 64;
+        const ctx = cv.getContext("2d");
+        ctx.font = font;
+        ctx.textAlign = "center";
+        ctx.fillStyle = color;
+        ctx.fillText(text, 128, 42);
+        const tex = new THREE.CanvasTexture(cv);
+        const mesh = new THREE.Mesh(new THREE.PlaneGeometry(2 * scale, 0.5 * scale), new THREE.MeshBasicMaterial({ map: tex, transparent: true }));
+        return mesh;
+      }
+
+      function onPointerDown(event) {
+        requestDeviceOrientationPermission();
+        canvas.setPointerCapture(event.pointerId);
+        const pt = new THREE.Vector2(event.clientX, event.clientY);
+        drag = { start: pt.clone(), current: pt.clone(), mode: appState === APP_STATE.SEALED && pt.y < window.innerHeight * 0.4 ? "tear" : "card" };
+      }
+
+      function onPointerMove(event) {
+        pointerTargetTilt.set((event.clientX / window.innerWidth - 0.5) * 2, -(event.clientY / window.innerHeight - 0.5) * 2);
+        if (!drag) return;
+        drag.current.set(event.clientX, event.clientY);
+
+        if (drag.mode === "tear" && appState === APP_STATE.SEALED) {
+          const dx = drag.current.x - drag.start.x;
+          const dragWidth = Math.max(360, window.innerWidth * 0.75);
+          const progress = Math.min(1, Math.abs(dx) / dragWidth);
+          const direction = Math.sign(dx || 1);
+          drag.tearProgress = progress;
+          drag.tearDirection = direction;
+          setTearProgress(progress, direction);
+        } else if (drag.mode === "card" && appState === APP_STATE.STACK && cards[currentCardIndex] && cardGroup) {
+          const dx = drag.current.x - drag.start.x;
+          const dy = drag.current.y - drag.start.y;
+          const maxAngle = Math.PI / 9;
+          isCardDragging = true;
+          cardGroup.rotation.y = Math.max(-maxAngle, Math.min(maxAngle, (dx / 240) * maxAngle));
+          cardGroup.rotation.x = -Math.max(-maxAngle, Math.min(maxAngle, (dy / 280) * maxAngle));
+          for (let i = currentCardIndex + 1; i < cards.length; i++) {
+            if (cards[i]) cards[i].visible = false;
+          }
+        }
+      }
+
+      function onPointerUp() {
+        if (!drag) return;
+        const dx = drag.current.x - drag.start.x;
+        const dy = drag.current.y - drag.start.y;
+        lastDragDistance = Math.sqrt(dx * dx + dy * dy);
+
+        if (drag.mode === "tear" && appState === APP_STATE.SEALED) {
+          const progress = drag.tearProgress || 0;
+          const direction = drag.tearDirection || Math.sign(dx || 1);
+          if (progress >= 0.5) openPack(direction, progress);
+          else snapBackTear(progress, direction);
+        } else if (drag.mode === "card" && appState === APP_STATE.STACK && cardGroup) {
+          for (let i = currentCardIndex + 1; i < cards.length; i++) {
+            if (cards[i]) cards[i].visible = true;
+          }
+          const startRotY = cardGroup.rotation.y;
+          const startRotX = cardGroup.rotation.x;
+          animateValue(0, 1, 320, (t) => {
+            const ease = 1 - Math.pow(1 - t, 3);
+            cardGroup.rotation.y = startRotY * (1 - ease);
+            cardGroup.rotation.x = startRotX * (1 - ease);
+          }, () => {
+            isCardDragging = false;
+          });
+        }
+        drag = null;
+      }
+
+      function onCanvasClick() {
+        if (lastDragDistance > 10) {
+          lastDragDistance = 0;
+          return;
+        }
+        if (appState === APP_STATE.STACK && cards[currentCardIndex] && !isCardTransitioning) {
+          moveCard(1);
+        }
+      }
+
+      function setTearProgress(progress, direction) {
+        if (!packGroup || !packGroup.visible) return;
+        const tearStrip = packGroup.userData.tearStrip;
+
+        if (tearStrip) {
+          if (progress < 0.45) {
+            const p = progress / 0.45;
+            tearStrip.visible = true;
+            tearStrip.position.copy(tearStrip.userData.basePosition);
+            tearStrip.rotation.copy(tearStrip.userData.baseRotation);
+            tearStrip.position.x += direction * p * 2.6;
+            tearStrip.position.y += Math.sin(p * Math.PI * 0.5) * 0.16;
+            tearStrip.position.z += p * 0.18;
+            tearStrip.rotation.z = direction * p * p * -0.9;
+            tearStrip.rotation.y = direction * p * 0.32;
+            tearStrip.material.opacity = 1 - p * 0.15;
+          } else if (progress < 0.7) {
+            const fp = (progress - 0.45) / 0.25;
+            tearStrip.visible = true;
+            tearStrip.position.copy(tearStrip.userData.basePosition);
+            tearStrip.rotation.copy(tearStrip.userData.baseRotation);
+            tearStrip.position.x += direction * (2.6 + fp * 1.4);
+            tearStrip.position.y += 0.16 - fp * fp * 2.0;
+            tearStrip.position.z += 0.18 + fp * 0.15;
+            tearStrip.rotation.z = direction * -0.9 + direction * fp * -2.4;
+            tearStrip.rotation.y = direction * (0.32 + fp * 0.3);
+            tearStrip.rotation.x = -fp * 0.6;
+            tearStrip.material.opacity = 0.85 * (1 - fp);
+          } else {
+            tearStrip.visible = false;
+            tearStrip.material.opacity = 0;
+          }
+        }
+
+        if (packTop && packTop.visible) {
+          const tp = THREE.MathUtils.clamp((progress - 0.18) / 0.65, 0, 1);
+          packTop.position.copy(packTop.userData.basePosition);
+          packTop.rotation.copy(packTop.userData.baseRotation);
+          packTop.position.y += tp * 0.35;
+          packTop.position.z -= tp * 0.55;
+          packTop.rotation.x = -tp * Math.PI * 0.88;
+          packTop.rotation.z = direction * tp * -0.12;
+        }
+      }
+
+      function previewTear(progress, direction) {
+        setTearProgress(progress, direction);
+      }
+
+      function snapBackTear(currentProgress, direction) {
+        animateValue(currentProgress, 0, 280, (p) => {
+          setTearProgress(p, direction);
+        });
+      }
+
+      function openPack(direction, startProgress = 0) {
+        appState = APP_STATE.TEARING;
+        updateUi();
+        tearParticles.visible = true;
+        const lightBurst = packGroup.userData.lightBurst;
+        const remaining = Math.max(0.05, 1 - startProgress);
+        const duration = 500 + remaining * 500;
+
+        animateValue(0, 1, duration, (t) => {
+          const easedT = 1 - Math.pow(1 - t, 2);
+          const progress = startProgress + easedT * (1 - startProgress);
+          setTearProgress(progress, direction);
+
+          if (lightBurst) {
+            const lp = 1 - Math.pow(1 - t, 2);
+            lightBurst.material.opacity = lp * 0.45;
+            lightBurst.scale.setScalar(0.5 + lp * 1.8);
+            lightBurst.rotation.z = lp * 1.6;
+          }
+
+          tearParticles.children.forEach((shard) => {
+            shard.position.add(shard.userData.vel);
+            shard.userData.vel.y -= 0.0009;
+            if (shard.isMesh && shard.rotation) {
+              shard.rotation.z += shard.userData.spin;
+              shard.rotation.x += shard.userData.spin * 0.6;
+            }
+            shard.material.opacity = Math.max(0, 1 - easedT * 1.05);
+          });
+        }, () => {
+          if (lightBurst) {
+            lightBurst.visible = false;
+            if (lightBurst.parent) {
+              lightBurst.parent.remove(lightBurst);
+            } else {
+              scene.remove(lightBurst);
+            }
+            if (lightBurst.material) {
+              if (lightBurst.material.map && lightBurst.material.map.dispose) {
+                lightBurst.material.map.dispose();
+              }
+              if (lightBurst.material.dispose) {
+                lightBurst.material.dispose();
+              }
+            }
+          }
+          packGroup.visible = false;
+          tearParticles.visible = false;
+
+          createCards();
+          if (cards.length > 0) {
+            appState = APP_STATE.STACK;
+          }
+          updateUi();
+        });
+      }
+
+      function moveCard(direction) {
+        if (appState !== APP_STATE.STACK || !cards[currentCardIndex] || isCardTransitioning) return;
+        isCardTransitioning = true;
+        const card = cards[currentCardIndex];
+        const nextCard = cards[currentCardIndex + 1] || null;
+        const sx = card.position.x;
+
+        if (nextCard && nextCard.userData?.card?.rarityKey === "ultraRare") {
+          playUltraRareFlash(nextCard, () => {});
+        }
+
+        animateValue(0, 1, 300, (t) => {
+          card.position.x = sx + direction * t * 3.5;
+          card.position.y = -0.1 + t * 0.2;
+          card.rotation.z = -direction * t * 0.6;
+        }, () => {
+          try {
+            if (!card.userData.saved) {
+              saveCard(card.userData.card);
+              card.userData.saved = true;
+            }
+            card.visible = false;
+            currentCardIndex++;
+            if (currentCardIndex >= cards.length) {
+              appState = APP_STATE.COMPLETE;
+              resetBtn.style.display = "block";
+              isCardTransitioning = false;
+              updateUi();
+            } else {
+              arrangeStack();
+              const newCurrent = cards[currentCardIndex];
+              if (newCurrent?.userData?.card?.rarityKey === "ultraRare") {
+                cards.forEach((c, idx) => {
+                  if (idx !== currentCardIndex && c.userData.effects) {
+                    c.userData.effects.visible = false;
+                    c.userData.effects.userData.fadeIn = 0;
+                  }
+                });
+              } else {
+                updateCurrentCardEffects();
+              }
+              isCardTransitioning = false;
+              updateUi();
+            }
+          } catch (err) {
+            console.error("moveCard callback error:", err);
+            isCardTransitioning = false;
+            updateUi();
+          }
+        });
+      }
+
+      function arrangeStack() {
+        for (let i = currentCardIndex; i < cards.length; i++) {
+          const stackIndex = i - currentCardIndex;
+          const card = cards[i];
+          card.position.set(0, -0.1 - stackIndex * 0.03, -stackIndex * 0.05);
+        }
+      }
+
+      function resetPack() {
+        animationJobs = [];
+        isCardTransitioning = false;
+        lastDragDistance = 0;
+        drag = null;
+        if (cardGroup) scene.remove(cardGroup);
+        cardGroup = null;
+        cards = [];
+        currentCardIndex = 0;
+        createPack();
+        appState = APP_STATE.SEALED;
+        resetBtn.style.display = "none";
+        updateUi();
+      }
+
+      function saveCard(card) {
+        collection[card.id] = { count: (collection[card.id]?.count || 0) + 1 };
+        localStorage.setItem("three-card-collection", JSON.stringify(collection));
+        renderCollectionTab();
+        renderRegisterTab();
+      }
+
+      function registerCard(cardId) {
+        setCardCount(cardId, (collection[cardId]?.count || 0) + 1);
+      }
+
+      function setCardCount(cardId, count) {
+        const card = CARD_POOL.find((item) => item.id === cardId);
+        if (!card) return;
+        
+        const newCount = Math.max(0, parseInt(count, 10) || 0);
+        if (newCount === 0) {
+          if (collection[card.id]) delete collection[card.id];
+        } else {
+          collection[card.id] = { count: newCount };
+        }
+        
+        localStorage.setItem("three-card-collection", JSON.stringify(collection));
+        renderCollectionTab();
+        renderRegisterTab();
+      }
+
+      function loadCollection() {
+        try {
+          const raw = JSON.parse(localStorage.getItem("three-card-collection")) || {};
+          const validIds = new Set(CARD_POOL.map((card) => card.id));
+          const normalized = {};
+
+          Object.entries(raw).forEach(([cardId, entry]) => {
+            if (!validIds.has(cardId)) return;
+            const count = Number(entry?.count || 0);
+            if (!Number.isFinite(count) || count <= 0) return;
+            normalized[cardId] = { count: Math.floor(count) };
+          });
+
+          if (JSON.stringify(raw) !== JSON.stringify(normalized)) {
+            localStorage.setItem("three-card-collection", JSON.stringify(normalized));
+          }
+
+          return normalized;
+        } catch {
+          return {};
+        }
+      }
+
+      function resetCollectionStorageOnce() {
+        try {
+          const flagKey = "three-card-collection-reset-v2";
+          if (localStorage.getItem(flagKey) === "1") return;
+          localStorage.removeItem("three-card-collection");
+          localStorage.setItem(flagKey, "1");
+        } catch (err) {
+          console.warn("collection reset skipped:", err);
+        }
+      }
+
+      function setCardWeight(cardId, weight, rerender = true) {
+        let weights = loadWeights();
+        const parsed = Number.parseFloat(weight);
+        const newWeight = Number.isFinite(parsed) ? Math.max(0, parsed) : 0;
+        weights[cardId] = newWeight;
+        localStorage.setItem("three-card-weights", JSON.stringify(weights));
+        if (rerender) {
+          renderRegisterTab();
+        }
+      }
+
+      function loadWeights() {
+        try {
+          return JSON.parse(localStorage.getItem("three-card-weights")) || {};
+        } catch {
+          return {};
+        }
+      }
+
+      function showCardModal(cardId) {
+        const card = CARD_POOL.find(c => c.id === cardId);
+        if (!card) return;
+        
+        let modal = document.getElementById("cardModal");
+        if (!modal) {
+          modal = document.createElement("div");
+          modal.id = "cardModal";
+          modal.style.cssText = "display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:9999; align-items:center; justify-content:center; flex-direction:column; backdrop-filter:blur(8px);";
+          
+          const content = document.createElement("div");
+          content.id = "cardModalContent";
+          content.style.cssText = "position:relative; width:85%; max-width:380px; display:flex; justify-content:center;";
+          modal.appendChild(content);
+          
+          const closeBtn = document.createElement("button");
+          closeBtn.textContent = "닫기";
+          closeBtn.style.cssText = "margin-top:24px; padding:12px 32px; background:var(--accent); color:#fff; border:none; border-radius:12px; font-weight:900; font-size:1.1rem; cursor:pointer; box-shadow:0 8px 16px rgba(0,0,0,0.3);";
+          closeBtn.onclick = () => modal.style.display = "none";
+          modal.appendChild(closeBtn);
+          
+          document.body.appendChild(modal);
+        }
+        
+        const content = document.getElementById("cardModalContent");
+        content.innerHTML = "";
+        
+        const tex = createCardCanvasTexture(card);
+        const cv = tex.image;
+        cv.style.width = "100%";
+        cv.style.height = "auto";
+        cv.style.borderRadius = "4.5%";
+        cv.style.boxShadow = "0 20px 50px rgba(0,0,0,0.6)";
+        content.appendChild(cv);
+        
+        modal.style.display = "flex";
+      }
+
+      function renderCollectionTab() {
+        collection = loadCollection();
+        const ownedCards = CARD_POOL.filter((card) => (collection[card.id]?.count || 0) > 0);
+        const totalCount = ownedCards.reduce((sum, card) => sum + (collection[card.id]?.count || 0), 0);
+        collectionCount.textContent = `${totalCount}장 보유 중 (${ownedCards.length}종)`;
+
+        collectionGrid.innerHTML = CARD_POOL.map((poolCard) => {
+          const match = collection[poolCard.id];
+          const cfg = RARITY_CONFIG[poolCard.rarityKey];
+          if (match && match.count > 0) {
+            const bgImage = poolCard.imageUrl ? `url(${poolCard.imageUrl})` : `linear-gradient(135deg, ${cfg.bgGrad[0]}, ${cfg.bgGrad[1]})`;
+            return `
+              <div class="collection-card owned" onclick="showCardModal('${poolCard.id}')" style="background: ${bgImage}; background-size: cover; background-position: center; border-color: ${cfg.border}; cursor:pointer;">
+                <div class="card-badge" style="color:#ffffff; background:rgba(0,0,0,0.5);">${cfg.symbol}</div>
+                <div class="card-info" style="background: rgba(0,0,0,0.65); padding: 6px; border-radius: 8px; margin: -4px;">
+                  <span class="c-name" style="color:#fff">${poolCard.name}</span>
+                  <span class="c-count" style="color:#ddd">보유량: ${match.count}개</span>
+                </div>
+              </div>
+            `;
+          }
+          
+          const unownedBg = poolCard.imageUrl ? `url(${poolCard.imageUrl})` : 'none';
+          return `
+            <div class="collection-card unowned" style="background-image: ${unownedBg}; background-size: cover; background-position: center;">
+              <div class="card-badge" style="background:rgba(0,0,0,0.5); color:#ffffff;">?</div>
+              <div class="card-info" style="${poolCard.imageUrl ? 'background: rgba(0,0,0,0.65); padding: 6px; border-radius: 8px; margin: -4px;' : ''}">
+                <span class="c-name" style="${poolCard.imageUrl ? 'color:#fff' : ''}">${poolCard.name}</span>
+                <span class="c-count" style="color:var(--muted)">미획득</span>
+              </div>
+            </div>
+          `;
+        }).join("");
+      }
+
+      function editCustomCard(cardId) {
+        const card = CARD_POOL.find(c => c.id === cardId);
+        if (!card) return;
+        editingCardId = cardId;
+        
+        const titleInput = document.querySelector("#customCardTitle");
+        const raritySelect = document.querySelector("#customCardRarity");
+        
+        titleInput.value = card.name;
+        raritySelect.value = card.rarityKey;
+        
+        const btn = document.querySelector("#registerCustomBtn");
+        btn.textContent = "카드 수정 완료";
+        setRegisterActionMode(true);
+        
+        document.querySelector("#customCardImage").value = "";
+        
+        document.getElementById("registerPanel").scrollTo({ top: 0, behavior: 'smooth' });
+        
+        titleInput.style.transition = "box-shadow 0.3s";
+        titleInput.style.boxShadow = "0 0 0 3px var(--accent)";
+        raritySelect.style.transition = "box-shadow 0.3s";
+        raritySelect.style.boxShadow = "0 0 0 3px var(--accent)";
+        
+        setTimeout(() => {
+          titleInput.style.boxShadow = "none";
+          raritySelect.style.boxShadow = "none";
+        }, 1500);
+        
+        // Removed the alert to avoid interrupting the flow, the visual scroll is enough.
+      }
+
+      function resetRegisterEditor() {
+        const fileInput = document.querySelector("#customCardImage");
+        const cropEditor = document.querySelector("#cropEditor");
+        const cropImage = document.querySelector("#cropImage");
+        const cropBox = document.querySelector("#cropBox");
+        const titleInput = document.querySelector("#customCardTitle");
+        const raritySelect = document.querySelector("#customCardRarity");
+        const btn = document.querySelector("#registerCustomBtn");
+
+        editingCardId = null;
+        if (fileInput) fileInput.value = "";
+        if (titleInput) {
+          titleInput.value = "";
+          titleInput.defaultValue = "";
+          titleInput.blur();
+        }
+        if (raritySelect) {
+          raritySelect.selectedIndex = 0;
+          raritySelect.value = "";
+        }
+        if (cropBox) {
+          cropBox.style.width = "180px";
+          cropBox.style.height = "140px";
+        }
+        if (cropEditor) cropEditor.style.display = "none";
+        if (cropImage) cropImage.src = "";
+        cropState.img = null;
+        if (btn) {
+          btn.textContent = "나만의 카드 만들기";
+          btn.disabled = false;
+          btn.style.width = "100%";
+          btn.style.flex = "";
+        }
+        setRegisterActionMode(false);
+      }
+
+      function setRegisterActionMode(isEditing) {
+        if (!registerActionRow) return;
+        registerActionRow.classList.toggle("editing", isEditing);
+        registerActionRow.style.display = isEditing ? "grid" : "block";
+        registerActionRow.innerHTML = isEditing
+          ? `
+            <button id="registerCustomBtn" type="button">카드 수정 완료</button>
+            <button id="cancelRegisterEditBtn" type="button" class="secondary">취소</button>
+          `
+          : `
+            <button id="registerCustomBtn" type="button">나만의 카드 만들기</button>
+          `;
+      }
+
+      function renderRegisterTab() {
+        const weights = loadWeights();
+        registerCount.textContent = `등장 확률 조절`;
+
+        registerGrid.innerHTML = CARD_POOL.map((poolCard) => {
+          const rawWeight = weights[poolCard.id];
+          const parsedWeight = rawWeight !== undefined && rawWeight !== null && rawWeight !== "" ? Number(rawWeight) : 10;
+          const safeWeight = Number.isFinite(parsedWeight) ? Math.max(0, parsedWeight) : 10;
+          const cfg = RARITY_CONFIG[poolCard.rarityKey];
+          const countText = `출현 가중치: ${safeWeight.toFixed(1)}`;
+
+          let actionBtnsHtml = "";
+          if (poolCard.isCustom) {
+            actionBtnsHtml = `
+              <div style="display:flex; gap:4px; margin-top:6px;">
+                <button class="action edit-btn" type="button" data-edit="${poolCard.id}" style="flex:1; border-color:var(--accent); color:var(--accent); background:rgba(45,212,191,0.1);">수정</button>
+                <button class="action delete" type="button" data-delete="${poolCard.id}" style="flex:1; border-color:#ef4444; color:#ef4444; background:rgba(239,68,68,0.1);">삭제</button>
+              </div>
+            `;
+          } else {
+            actionBtnsHtml = `<button class="action delete" type="button" data-delete="${poolCard.id}" style="border-color:#ef4444; color:#ef4444; background:linear-gradient(135deg, rgba(239,68,68,0.1), rgba(239,68,68,0.05)); margin-top:6px;">삭제</button>`;
+          }
+
+          return `
+            <div class="register-card" style="border-color:${cfg.border}">
+              <div class="meta">
+                <span style="color:${cfg.border}; font-weight:900;">${cfg.symbol}</span>
+                <span>${cfg.label}</span>
+              </div>
+              <div class="title">${poolCard.name}</div>
+              <div class="meta">
+                <span>${countText}</span>
+                <span>${poolCard.code}</span>
+              </div>
+              <div style="display:flex; flex-direction:column; gap:4px;">
+                <div class="probability-row">
+                  <input type="number" class="probability-input count-input" data-id="${poolCard.id}" value="${safeWeight}" min="0" step="0.1" inputmode="decimal" aria-label="${poolCard.name} 등장 가중치" />
+                  <span class="probability-unit">가중치</span>
+                </div>
+                ${actionBtnsHtml}
+              </div>
+            </div>
+          `;
+        }).join("");
+
+        registerGrid.querySelectorAll(".count-input").forEach((input) => {
+          input.addEventListener("input", () => {
+            setCardWeight(input.dataset.id, input.value, false);
+          });
+          input.addEventListener("change", () => {
+            setCardWeight(input.dataset.id, input.value, true);
+          });
+          input.addEventListener("blur", () => {
+            setCardWeight(input.dataset.id, input.value, true);
+          });
+        });
+
+        registerGrid.querySelectorAll("[data-edit]").forEach((button) => {
+          button.addEventListener("click", () => editCustomCard(button.dataset.edit));
+        });
+
+        registerGrid.querySelectorAll("[data-delete]").forEach((button) => {
+          button.addEventListener("click", () => deleteCustomCard(button.dataset.delete));
+        });
+      }
+      function deleteCustomCard(cardId) {
+        if (!confirm("정말 이 카드를 완전히 삭제하시겠습니까? (보유 목록과 팩 개봉 후보에서 사라집니다.)")) return;
+        
+        let deletedCards = [];
+        try { deletedCards = JSON.parse(localStorage.getItem("three-deleted-cards") || "[]"); } catch(e){}
+        if (!deletedCards.includes(cardId)) {
+          deletedCards.push(cardId);
+          localStorage.setItem("three-deleted-cards", JSON.stringify(deletedCards));
+        }
+
+        let customStored = [];
+        try { customStored = JSON.parse(localStorage.getItem("three-custom-cards") || "[]"); } catch(e){}
+        customStored = customStored.filter(c => c.id !== cardId);
+        localStorage.setItem("three-custom-cards", JSON.stringify(customStored));
+
+        const index = CARD_POOL.findIndex(c => c.id === cardId);
+        if (index > -1) CARD_POOL.splice(index, 1);
+
+        collection = loadCollection();
+        if (collection[cardId]) {
+          delete collection[cardId];
+          localStorage.setItem("three-card-collection", JSON.stringify(collection));
+        }
+
+        renderCollectionTab();
+        renderRegisterTab();
+      }
+
+      function updateUi() {
+        if (stateText) stateText.textContent = appState;
+        if (appState === APP_STATE.SEALED) {
+          if (hintText) hintText.textContent = "팩 상단을 누른 뒤 가로로 스와이프하세요.";
+          if (resetBtn) resetBtn.style.display = "none";
+        } else if (appState === APP_STATE.STACK) {
+          if (hintText) hintText.textContent = "카드를 터치하면 다음 카드로 넘어갑니다. 드래그하면 각도를 조절할 수 있어요.";
+        } else if (appState === APP_STATE.COMPLETE) {
+          if (hintText) hintText.textContent = "모든 카드를 모았습니다. 하단 컬렉션에서 확인하세요.";
+        }
+      }
+
+      function requestDeviceOrientationPermission() {
+        if (orientationPermissionAsked || !window.DeviceOrientationEvent) return;
+        orientationPermissionAsked = true;
+        if (typeof DeviceOrientationEvent.requestPermission === "function") {
+          DeviceOrientationEvent.requestPermission()
+            .then((state) => {
+              deviceTiltActive = state === "granted";
+            })
+            .catch(() => {
+              deviceTiltActive = false;
+            });
+        }
+      }
+
+      function onDeviceOrientation(event) {
+        if (typeof event.beta !== "number" || typeof event.gamma !== "number") return;
+        const gamma = THREE.MathUtils.clamp(event.gamma, -30, 30) / 30;
+        const beta = THREE.MathUtils.clamp(event.beta - 45, -30, 30) / 30;
+        deviceTargetTilt.set(gamma, -beta);
+        deviceTiltActive = true;
+      }
+
+      function animateValue(from, to, duration, onUpdate, onComplete) {
+        animationJobs.push({ from, to, duration, startedAt: performance.now(), onUpdate, onComplete });
+      }
+
+      function tickAnimations(now) {
+        animationJobs = animationJobs.filter((job) => {
+          const t = Math.min(1, (now - job.startedAt) / job.duration);
+          job.onUpdate(THREE.MathUtils.lerp(job.from, job.to, t));
+          if (t >= 1) {
+            job.onComplete?.();
+            return false;
+          }
+          return true;
+        });
+      }
+
+      function animate(now = 0) {
+        requestAnimationFrame(animate);
+        const deviceWeight = deviceTiltActive ? 0.7 : 0;
+        combinedTilt.set(pointerTargetTilt.x * 0.5 + deviceTargetTilt.x * deviceWeight, pointerTargetTilt.y * 0.5 + deviceTargetTilt.y * deviceWeight);
+        pointerTilt.lerp(combinedTilt, 0.1);
+        tickAnimations(now);
+
+        if (packGroup && appState === APP_STATE.SEALED) {
+          packGroup.rotation.y = Math.sin(now * 0.001) * 0.05 + pointerTilt.x * 0.1;
+        }
+        cards.forEach((card) => {
+          card.children.forEach((child) => {
+            if (child.material?.uniforms?.time) {
+              child.material.uniforms.time.value = now * 0.001;
+              child.material.uniforms.tilt.value.copy(pointerTilt);
+            }
+          });
+        });
+        if (cardGroup && appState === APP_STATE.STACK && !isCardDragging) {
+          cardGroup.rotation.y = pointerTilt.x * 0.1;
+          cardGroup.rotation.x = pointerTilt.y * 0.05;
+        }
+
+        if (cards.length > 0 && currentCardIndex < cards.length) {
+          const activeCard = cards[currentCardIndex];
+          const fx = activeCard?.userData.effects;
+          if (fx && fx.visible) {
+            const fade = fx.userData.fadeIn ?? 1;
+            if (fx.userData.aura) {
+              fx.userData.aura.material.opacity = (0.5 + Math.sin(now * 0.002) * 0.18) * fade;
+              fx.userData.aura.rotation.z = now * 0.0003;
+            }
+            if (fx.userData.rays) {
+              fx.userData.rays.rotation.z = now * 0.00065;
+              fx.userData.rays.material.opacity = (0.4 + Math.sin(now * 0.003) * 0.13) * fade;
+            }
+            fx.userData.sparkles?.forEach((s) => {
+              const ud = s.userData;
+              ud.phase += 0.022 * ud.speed;
+              const r = ud.baseR + Math.sin(ud.phase) * 0.18;
+              const angle = ud.baseAngle + Math.sin(ud.phase * 0.62) * 0.28;
+              s.position.x = Math.cos(angle) * r;
+              s.position.y = Math.sin(angle) * r * 1.25;
+              const twinkle = (Math.sin(ud.phase * 2.1) + 1) * 0.5;
+              s.material.opacity = (0.35 + twinkle * 0.65) * fade;
+              s.scale.setScalar(ud.baseScale * (0.7 + twinkle * 0.5));
+            });
+          }
+        }
+
+        renderer.render(scene, camera);
+      }
+
+      function onResize() {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+      }
+    </script>
+  </body>
+</html>
